@@ -13,25 +13,13 @@ interface CompanyMetadata {
 }
 
 interface ProjectMetadata {
-  name: string;
+  projectName: string;
+  category: string;
+  iptype: string;
   description: string;
-  property_type_id: number;
-  stage: string;
-  ownership_model: string;
-  share_type: string;
-  featured_video_type: string;
-  step_completed: number;
-  stage_of_production: string;
-  percentage_of_ip: string;
-  total_expected_investment: string;
-  expected_monetisation_after_ip_right: string;
-  proposed_irr: string;
-  proposed_money_multipl: string;
-  lock_in_period: string;
-  other_term: string;
-  feature_image: string;
-  media_type: string;
-  media_value: string;
+  totalToken:string;
+  tokenPrice:string;
+  proImage: string;
 
 }
 
@@ -84,10 +72,10 @@ const useIPFSUpload = () => {
     try {
       // Upload company metadata to IPFS
       const metadataCID = await pinataManager.uploadJSON(metadata, 'public', {
-        name: `${metadata.name}-metadata`,
+        name: `${metadata.projectName}-metadata`,
         keyvalues: {
           type: 'project_metadata',
-          project_name: metadata.name,
+          project_name: metadata.projectName,
         },
       });
 

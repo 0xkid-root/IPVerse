@@ -48,6 +48,7 @@ export default function ProjectForm({
   const [imagePreview, setImagePreview] = useState(initialData?.image || null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -116,7 +117,10 @@ export default function ProjectForm({
 
     console.log("payload is formdata is here :", payload);
 
+
     await onSubmit(payload);
+
+
     setIsSubmitting(false);
     if (!isEditing) {
       // Reset form for new projects

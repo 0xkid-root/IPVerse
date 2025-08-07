@@ -5,13 +5,17 @@ import LayoutDashboard from "@/components/LayoutDashboard"
 import ProjectForm from "@/components/ProjectForm"
 import { CheckCircle, AlertCircle, Sparkles } from "lucide-react"
 import { apiFetch } from "@/lib/api"
+import useIPFSUpload from "@/hooks/useIPFSUpload"
 
 export default function AddProjectPage() {
   const [showSuccess, setShowSuccess] = useState(false)
   const [error, setError] = useState("")
+      const {uploadProjectFiles,loading} = useIPFSUpload()
+
 
   const handleProjectSubmit = async (projectData: any) => {
     setError("")
+    console.log("Project data submitted:", projectData)
     try {
       // Call your backend API using apiFetch
       const res = await apiFetch<{ success: boolean; message: string; data: any }>(
@@ -23,8 +27,24 @@ export default function AddProjectPage() {
       )
       console.log("res is here why you fear ", res);
       if (res.success) {
-        setShowSuccess(true)
-        setTimeout(() => setShowSuccess(false), 5000)
+        setShowSuccess(true);
+
+        // Use the Cloudinary image URL from backend response
+        const projectMetadata = {
+          projectName: projectData.title,
+          category: projectData.category,
+          iptype: projectData.ipType,
+          description: projectData.description,
+          totalToken: String(projectData.totalTokens),
+          tokenPrice: String(projectData.tokenPrice),
+          proImage: res.data.project.images[0] || "", // Cloudinary URL
+        };
+
+        // Upload metadata to IPFS
+        const fileUrl = await uploadProjectFiles(projectMetadata);
+        console.log("File uploaded to IPFS:", fileUrl);
+
+        setTimeout(() => setShowSuccess(false), 5000);
       }
     } catch (err: any) {
       setError(err.message || "Failed to create project")
