@@ -9,6 +9,7 @@ import { toast, Toaster } from "sonner";
 import { apiFetch } from "@/lib/api";
 import LayoutDashboard from "@/components/LayoutDashboard";
 import { Button } from "@/components/ui/button";
+import useIPFSUpload from "@/hooks/useIPFSUpload";
 
 import {
   Form,
@@ -34,6 +35,7 @@ const formSchema = z.object({
 
 export default function ManageCompaniesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const {uploadCompanyFiles,loading,error} = useIPFSUpload();
 
   const form = useForm<z.infer<typeof formSchema>>({  
     resolver: zodResolver(formSchema),
@@ -63,8 +65,19 @@ export default function ManageCompaniesPage() {
         }
       );
 
+
+
       console.log("API Response:", response);
       if (response.success) {
+        // Upload company files to IPFS
+        const fileUrls = await uploadCompanyFiles({
+          name: values.name,
+  description: values.description,
+  contactEmail: values.contactEmail,
+  contactPhone: values.contactPhone,
+  address: values.address,
+        });
+        console.log("Uploaded file URLs:", fileUrls);
         form.reset();
         toast.success(`Company "${response.data.name}" created successfully!`, {
           icon: <CheckCircle2 className="h-4 w-4" />,

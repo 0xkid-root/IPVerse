@@ -56,6 +56,7 @@ const useIPFSUpload = () => {
           company_name: metadata.name,
         },
       });
+      console.log('Company metadata uploaded to IPFS:', metadataCID);
 
       // Return the metadata CID (no file uploads)
       fileUrls['metadata'] = metadataCID; // Store metadata CID instead of file URLs
