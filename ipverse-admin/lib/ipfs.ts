@@ -7,25 +7,23 @@ interface FileMetadata {
   keyvalues?: Record<string, string>;
 }
 
-const GATEWAY_URL="indigo-imperial-crawdad-414.mypinata.cloud"
-const NEXT_PUBLIC_PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiJkZTdmN2ZjMS04NTU4LTQwNzctODJhNC00YzIyYWM1ODc1ZTciLCJlbWFpbCI6ImV2ZXJ5dGhpbmdnYXVyYXY0OEBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGluX3BvbGljeSI6eyJyZWdpb25zIjpbeyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJGUkExIn0seyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJOWUMxIn1dLCJ2ZXJzaW9uIjoxfSwibWZhX2VuYWJsZWQiOmZhbHNlLCJzdGF0dXMiOiJBQ1RJVkUifSwiYXV0aGVudGljYXRpb25UeXBlIjoic2NvcGVkS2V5Iiwic2NvcGVkS2V5S2V5IjoiMTQzYzlhYzQ1MzRhMjVkZTAzZTEiLCJzY29wZWRLZXlTZWNyZXQiOiJhZDRkNDVjNGI5ZTZlMzI0NWNlZTdhOTM5OTQ1MjI2MWU4NDE4MDU4NzhjM2Q1MTJmYjBlNTdjNTUxZGFlY2RlIiwiZXhwIjoxNzczNzY5NjAyfQ.cTOlilx6z_5DiB-ykFGmvQGfdwTpWCzQPT9EhnSh--k"
-
 export class PinataFileManager {
   private pinata: PinataSDK;
+  private gateway: string;
 
   constructor() {
-    if (!NEXT_PUBLIC_PINATA_JWT) {
+    if (!process.env.NEXT_PUBLIC_PINATA_JWT) {
       throw new Error('NEXT_PUBLIC_PINATA_JWT environment variable is required');
     }
-    if (!GATEWAY_URL) {
-      throw new Error('GATEWAY_URL environment variable is required');
+    if (!process.env.NEXT_PUBLIC_GATEWAY_URL) {
+      throw new Error('NEXT_PUBLIC_GATEWAY_URL environment variable is required');
     }
 
     this.pinata = new PinataSDK({
       pinataJwt: process.env.NEXT_PUBLIC_PINATA_JWT,
-      pinataGateway: process.env.GATEWAY_URL,
+      pinataGateway: process.env.NEXT_PUBLIC_GATEWAY_URL,
     });
-    // Gateway URL is set in PinataSDK constructor
+    this.gateway = process.env.NEXT_PUBLIC_GATEWAY_URL;
   }
 
   async uploadFile(
@@ -103,7 +101,8 @@ export class PinataFileManager {
   }
 
   async listFiles(
-    network: 'public' | 'private'
+    network: 'public' | 'private',
+    filters?: { status?: 'pinned' | 'unpinned' }
   ): Promise<any[]> {
     try {
       const result = network === 'public'
@@ -153,10 +152,12 @@ export class PinataFileManager {
 
   async getFileURL(cid: string, network: 'public' | 'private'): Promise<string> {
     try {
-      // For now, just return the gateway URL with the CID
-      const gatewayUrl = process.env.GATEWAY_URL;
-      return `${gatewayUrl}/ipfs/${cid}`;
-
+      const signedUrl = this.pinata.upload.public.createSignedURL({
+        
+        expires: 3600, // 1 hour
+      });
+      
+      return signedUrl;
     } catch (error) {
       console.error(`Error generating ${network} file URL:`, error);
       throw new Error(`Failed to generate ${network} file URL`);
