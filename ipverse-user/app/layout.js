@@ -1,6 +1,7 @@
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
-import Providers from "./providers"; 
+import Providers from "./providers";
+import Auth from "@/components/campModal"; // Import the Auth component
 
 export default function RootLayout({ children }) {
   return (
@@ -8,6 +9,7 @@ export default function RootLayout({ children }) {
       <body>
         <Providers>
           <AuthProvider>
+            <Auth /> 
             {children}
           </AuthProvider>
         </Providers>

@@ -1,110 +1,108 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { createContext, useContext, useState, useEffect } from "react"
+import type React from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 
 interface User {
-  id: string
-  name: string
-  email: string
-  avatar?: string
-  kycStatus?: string
-  walletBalance?: number
-  totalInvestments?: number
-  lastLogin?: string
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  kycStatus?: string;
+  walletBalance?: number;
+  totalInvestments?: number;
+  lastLogin?: string;
+  walletAddress?: string; // Added to sync with Camp SDK
 }
 
 interface AuthContextType {
-  user: User | null
-  login: (email: string, password: string) => Promise<{ success: boolean, message?: string }>
-  signup: (name: string, email: string, password: string) => Promise<boolean>
-  logout: () => void
-  isAuthenticated: boolean
-  isLoading: boolean
+  user: User | null;
+  login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
+  signup: (name: string, email: string, password: string) => Promise<boolean>;
+  logout: () => void;
+  setUser: (user: User | null) => void; // Added to update user state
+  isAuthenticated: boolean;
+  isLoading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log("Checking initial authentication state")
-    // Check for stored user and token on mount
+    console.log("Checking initial authentication state");
     try {
-      const storedUser = localStorage.getItem("ipverse-user")
-      const token = localStorage.getItem("ipverse-token")
-      console.log("Stored auth state:", { hasUser: !!storedUser, hasToken: !!token })
+      const storedUser = localStorage.getItem("ipverse-user");
+      const token = localStorage.getItem("ipverse-token");
+      console.log("Stored auth state:", { hasUser: !!storedUser, hasToken: !!token });
 
       if (storedUser && token) {
         try {
-          const parsedUser = JSON.parse(storedUser)
-          console.log("Successfully parsed stored user data")
-          setUser(parsedUser)
+          const parsedUser = JSON.parse(storedUser);
+          console.log("Successfully parsed stored user data");
+          setUser(parsedUser);
         } catch (parseError) {
-          console.error("Failed to parse stored user data:", parseError)
-          localStorage.removeItem("ipverse-user")
-          localStorage.removeItem("ipverse-token")
-          setUser(null)
+          console.error("Failed to parse stored user data:", parseError);
+          localStorage.removeItem("ipverse-user");
+          localStorage.removeItem("ipverse-token");
+          setUser(null);
         }
       } else {
-        console.log("Incomplete auth state, clearing data")
-        // Clear incomplete auth state
-        localStorage.removeItem("ipverse-user")
-        localStorage.removeItem("ipverse-token")
-        setUser(null)
+        console.log("Incomplete auth state, clearing data");
+        localStorage.removeItem("ipverse-user");
+        localStorage.removeItem("ipverse-token");
+        setUser(null);
       }
     } catch (error) {
-      console.error("Error accessing localStorage:", error)
-      // Clear potentially corrupted data
+      console.error("Error accessing localStorage:", error);
       try {
-        localStorage.removeItem("ipverse-user")
-        localStorage.removeItem("ipverse-token")
+        localStorage.removeItem("ipverse-user");
+        localStorage.removeItem("ipverse-token");
       } catch (clearError) {
-        console.error("Failed to clear corrupted data:", clearError)
+        console.error("Failed to clear corrupted data:", clearError);
       }
-      setUser(null)
+      setUser(null);
     } finally {
-      setIsLoading(false)
-      console.log("Finished checking authentication state")
+      setIsLoading(false);
+      console.log("Finished checking authentication state");
     }
-  }, [])
+  }, []);
 
-  const login = async (email: string, password: string): Promise<{ success: boolean, message?: string }> => {
+  const login = async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
     try {
-      console.log("Attempting login for:", email)
+      console.log("Attempting login for:", email);
       const res = await fetch("http://localhost:5000/api/user/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
-      })
-      const result = await res.json()
-      console.log("result is here",result);
-      console.log("Login response:", { ok: res.ok, success: result.success, hasUser: !!result.data?.user, hasToken: !!result.token })
+      });
+      const result = await res.json();
+      console.log("Login response:", { ok: res.ok, success: result.success, hasUser: !!result.data?.user, hasToken: !!result.token });
 
-      if (res.ok && result.success ) {
-        const user = result.data?.user
-        console.log("Setting user and token in state/storage",user);
+      if (res.ok && result.success) {
+        const user = result.data?.user;
+        console.log("Setting user and token in state/storage", user);
         try {
-          localStorage.setItem("ipverse-user", JSON.stringify(user))
-          localStorage.setItem("ipverse-token", result.data?.token)
-          console.log("Successfully stored auth data")
-          setUser(user)
-          return { success: true }
+          localStorage.setItem("ipverse-user", JSON.stringify(user));
+          localStorage.setItem("ipverse-token", result.data?.token);
+          console.log("Successfully stored auth data");
+          setUser(user);
+          return { success: true };
         } catch (storageError) {
-          console.error("Failed to store auth data:", storageError)
-          return { success: false, message: "Failed to store authentication data. Please try again." }
+          console.error("Failed to store auth data:", storageError);
+          return { success: false, message: "Failed to store authentication data. Please try again." };
         }
       } else {
-        console.warn("Login failed:", result.message || "Unknown error")
-        return { success: false, message: result.message || "Login failed. Please try again." }
+        console.warn("Login failed:", result.message || "Unknown error");
+        return { success: false, message: result.message || "Login failed. Please try again." };
       }
     } catch (error) {
-      console.error("Login error:", error)
-      return { success: false, message: "Login failed. Please try again." }
+      console.error("Login error:", error);
+      return { success: false, message: "Login failed. Please try again." };
     }
-  }
+  };
 
   const signup = async (name: string, email: string, password: string): Promise<boolean> => {
     try {
@@ -115,7 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       const result = await res.json();
       console.log("Signup API result:", result);
-      
+
       if (res.ok && result.success) {
         console.log("Registration successful, data:", result.data);
         if (result.data?.user && result.data?.token) {
@@ -146,14 +144,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
-    setUser(null)
+    setUser(null);
     try {
-      localStorage.removeItem("ipverse-user")
-      localStorage.removeItem("ipverse-token")
+      localStorage.removeItem("ipverse-user");
+      localStorage.removeItem("ipverse-token");
     } catch (error) {
-      console.error("Error removing user from localStorage:", error)
+      console.error("Error removing user from localStorage:", error);
     }
-  }
+  };
 
   return (
     <AuthContext.Provider
@@ -162,19 +160,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         signup,
         logout,
+        setUser, // Provided to the context
         isAuthenticated: !!user,
         isLoading,
       }}
     >
       {children}
     </AuthContext.Provider>
-  )
+  );
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider")
-  }
-  return context
-}
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) throw new Error("useAuth must be used within an AuthProvider");
+  return context;
+};
