@@ -15,3 +15,4 @@ export function validateProjectForm(formData: any, selectedCompanyId: string) {
 
   return null;
 }
+

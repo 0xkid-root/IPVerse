@@ -1,77 +1,67 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { ChevronDown, User, LogOut, Menu, Wallet2 } from "lucide-react"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { ChevronDown, User, LogOut, Menu } from "lucide-react";
+import { useAuth, CampModal, useAuthState, useConnect, useModal } from "@campnetwork/origin/react";
 
 interface AdminTopbarProps {
-  isCollapsed: boolean
-  onToggleCollapse: () => void
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
 export default function AdminTopbar({ isCollapsed, onToggleCollapse }: AdminTopbarProps) {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [adminName, setAdminName] = useState("")
-  const [walletAddress, setWalletAddress] = useState<string | null>(null)
-  const router = useRouter()
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [adminName, setAdminName] = useState("");
+  const [showConnectModal, setShowConnectModal] = useState(false);
+  const router = useRouter();
+  const auth = useAuth();
+  const { authenticated, loading } = useAuthState();
+  const { connect, disconnect } = useConnect();
+  const { openModal } = useModal(); 
 
+  console.log("connect is here ::",connect);
+
+  // Log authentication state and modal actions for debugging
   useEffect(() => {
-    const name = localStorage.getItem("adminName") || "Admin"
-    const storedAddress = localStorage.getItem("walletAddress")
-    setAdminName(name)
-    setWalletAddress(storedAddress)
-  }, [])
-
-  const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated")
-    localStorage.removeItem("adminName")
-    localStorage.removeItem("walletAddress")
-    router.push("/login")
-  }
-
-  const connectWallet = async () => {
-    if (typeof window === 'undefined') {
-      console.log("Window is undefined. This code must run in a browser.")
-      alert("This feature is only available in a browser environment.")
-      return
+    console.log("Authenticated:", authenticated);
+    console.log("Loading:", loading);
+    console.log("Show Connect Modal:", showConnectModal);
+    if (!authenticated) {
+      localStorage.removeItem("walletAddress");
+    } else if (auth.walletAddress) {
+      localStorage.setItem("walletAddress", auth.walletAddress);
     }
+  }, [authenticated, loading, auth.walletAddress, showConnectModal]);
 
-    if (typeof (window as any).ethereum === 'undefined') {
-      console.log("MetaMask is not installed or not detected.")
-      alert("Please install MetaMask extension to connect your wallet.")
-      return
-    }
+  // Single useEffect to handle initial state
+  useEffect(() => {
+    const storedName = localStorage.getItem("adminName") || "Admin";
+    setAdminName(storedName);
+  }, []);
 
+  const handleLogout = async () => {
     try {
-      console.log("Attempting to connect to MetaMask...")
-      await (window as any).ethereum.request({ method: 'eth_requestAccounts' })
-      const accounts = await (window as any).ethereum.request({ method: 'eth_accounts' })
-      
-      if (accounts.length > 0) {
-        const address = accounts[0]
-        console.log("Connected account:", address)
-        localStorage.setItem("walletAddress", address)
-        setWalletAddress(address)
-        alert("Wallet connected successfully: " + address)
-      } else {
-        console.log("No accounts found after connection attempt.")
-        alert("No MetaMask accounts available. Please ensure MetaMask is unlocked and has accounts.")
-      }
+      await disconnect();
+      localStorage.removeItem("isAuthenticated");
+      localStorage.removeItem("adminName");
+      localStorage.removeItem("walletAddress");
+      router.push("/login");
     } catch (error) {
-      console.error("MetaMask connection error:", error)
-      if ((error as any).code === 4001) {
-        alert("User rejected the connection request in MetaMask.")
-      } else {
-        alert("Failed to connect to MetaMask: " + (error as Error).message)
-      }
+      console.error("Logout error:", error);
     }
-  }
+  };
 
-  const disconnectWallet = () => {
-    setWalletAddress(null)
-    localStorage.removeItem("walletAddress")
-    alert("Wallet disconnected.")
-  }
+  const displayWalletAddress = authenticated && auth.walletAddress
+    ? `${auth.walletAddress.slice(0, 6)}...${auth.walletAddress.slice(-4)}`
+    : "";
+
+  // Handle opening the modal
+  const handleConnectClick = () => {
+    console.log("Opening connect modal...");
+    openModal(); 
+    setShowConnectModal(true); 
+  };
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -97,41 +87,49 @@ export default function AdminTopbar({ isCollapsed, onToggleCollapse }: AdminTopb
               <User className="h-5 w-5 text-white" />
             </div>
             <span className="text-gray-700 font-medium">
-              {adminName} {walletAddress ? `| ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : ""}
+              {adminName} {displayWalletAddress ? `| ${displayWalletAddress}` : ""}
             </span>
             <ChevronDown className="h-4 w-4 text-gray-500" />
           </button>
 
-          {/* Dropdown Menu */}
           {isDropdownOpen && (
             <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border">
               <button
                 onClick={() => {
-                  setIsDropdownOpen(false)
-                  router.push("/dashboard/profile")
+                  setIsDropdownOpen(false);
+                  router.push("/dashboard/profile");
                 }}
                 className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
               >
                 <User className="mr-3 h-4 w-4" />
                 Profile
               </button>
-              {!walletAddress && (
+              {!authenticated && !loading && (
                 <button
-                  onClick={connectWallet}
-                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-red-50"
+                  onClick={handleConnectClick}
+                  className="flex items-center w-full px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50"
                 >
-                  <Wallet2 className="mr-3 h-4 w-4" />
-                  Connect wallet
+                  Connect Wallet
                 </button>
               )}
-              {walletAddress && (
+              {authenticated && !loading && (
                 <button
-                  onClick={disconnectWallet}
+                  onClick={async () => {
+                    try {
+                      await disconnect();
+                    } catch (error) {
+                      console.error("Disconnect error:", error);
+                    }
+                  }}
                   className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                 >
-                  <LogOut className="mr-3 h-4 w-4" />
-                  Disconnect Wallet
+                  Disconnect
                 </button>
+              )}
+              {loading && (
+                <div className="flex items-center w-full px-4 py-2 text-sm text-gray-500">
+                  Loading...
+                </div>
               )}
               <button
                 onClick={handleLogout}
@@ -144,6 +142,8 @@ export default function AdminTopbar({ isCollapsed, onToggleCollapse }: AdminTopb
           )}
         </div>
       </div>
+      {/* Render CampModal with injectButton=false */}
+      <CampModal injectButton={false} />
     </header>
-  )
+  );
 }
