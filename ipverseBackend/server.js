@@ -19,7 +19,7 @@ app.use(express.urlencoded({ extended: true }));
 const corsOptions = {
   origin: [
     process.env.FRONTEND_URL || 'http://localhost:3000',
-    process.env.ADMIN_FRONTEND_URL || 'http://localhost:3001'
+    process.env.ADMIN_FRONTEND_URL || 'http://localhost:3001'|| 'http://localhost:3002'
   ],
   credentials: true,
   optionsSuccessStatus: 200
