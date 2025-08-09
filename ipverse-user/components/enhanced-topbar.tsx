@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/auth-context"
-import { User, LogOut, Menu } from "lucide-react"
+import { User, LogOut, Menu, Wallet } from "lucide-react"
 import Link from "next/link"
 
 interface EnhancedTopbarProps {
@@ -52,12 +52,19 @@ export function EnhancedTopbar({ onMenuClick, isCollapsed }: EnhancedTopbarProps
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
+
             <DropdownMenuItem asChild>
               <Link href="/dashboard/profile" className="flex items-center">
                 <User className="mr-2 h-4 w-4" />
                 Profile
               </Link>
             </DropdownMenuItem>
+
+            <DropdownMenuItem  className="flex items-center">
+              <Wallet className="mr-2 h-4 w-4" />
+              Connect Wallet
+            </DropdownMenuItem>
+
             <DropdownMenuItem onClick={logout} className="flex items-center">
               <LogOut className="mr-2 h-4 w-4" />
               Logout
